@@ -370,18 +370,23 @@ function cib_build_event_context(
 
     $date_format = $date_format ?: "d M Y";
     $time_format = $time_format ?: "g:i A";
+    // Site wall-clock TZ so PHP "T" matches Civi event times (AEDT/AEST etc.).
+    $tz = function_exists("wp_timezone")
+        ? wp_timezone()
+        : new DateTimeZone(date_default_timezone_get());
 
     // ── Dates ────────────────────────────────────────────────────────────────────
-    $date_start = $time_start = $date_end = $time_end = "";
+    $date_start = $time_start = $date_end = $time_end = $timezone = "";
     $gcal_start = $gcal_end = "";
     if (!empty($event["start_date"])) {
-        $dt = new DateTime($event["start_date"]);
+        $dt = new DateTime($event["start_date"], $tz);
         $date_start = $dt->format($date_format);
         $time_start = $dt->format($time_format);
+        $timezone = $dt->format("T");
         $gcal_start = $gcal_end = $dt->format("Ymd\THis");
     }
     if (!empty($event["end_date"])) {
-        $dt = new DateTime($event["end_date"]);
+        $dt = new DateTime($event["end_date"], $tz);
         $date_end = $dt->format($date_format);
         $time_end = $dt->format($time_format);
         $gcal_end = $dt->format("Ymd\THis");
@@ -531,6 +536,7 @@ function cib_build_event_context(
         "time_start" => esc_html($time_start),
         "date_end" => esc_html($date_end),
         "time_end" => esc_html($time_end),
+        "timezone" => esc_html($timezone),
         "index" => $index,
         "class" => $index % 2 === 0 ? "even" : "odd",
         "ical_url" => esc_url($ical_url),
